@@ -1,13 +1,16 @@
 "use client";
 
+import { UserCard } from "@/components/UserCard";
+import { cleanUser } from "@/libs/cleanUser";
 import axios from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function RandomUserPage() {
   //user = null or array of object
   const [users, setUsers] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [genAmount, setGenAmount] = useState(1);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const generateBtnOnClick = async () => {
     setIsLoading(true);
@@ -16,10 +19,31 @@ export default function RandomUserPage() {
     );
     setIsLoading(false);
     const users = resp.data.results;
+    const cleanedUser = users.map((user) => cleanUser(user));
+    setUsers(cleanedUser);
     //Your code here
     //Process result from api response with map function. Tips use function from /src/libs/cleanUser
     //Then update state with function : setUsers(...)
   };
+
+  useEffect(() => {
+    if (isFirstLoad) {
+      setIsFirstLoad(false);
+      return;
+    }
+    const strAmount = JSON.stringify(genAmount);
+    localStorage.setItem("genAmount", strAmount);
+  }, [genAmount]);
+
+  useEffect(() => {
+    const getStrAmount = localStorage.getItem("genAmount");
+    if (getStrAmount === null) {
+      setGenAmount(1);
+      return;
+    }
+    const loadedAmount = JSON.parse(getStrAmount);
+    setGenAmount(loadedAmount);
+  }, []);
 
   return (
     <div style={{ maxWidth: "700px" }} className="mx-auto">
@@ -40,7 +64,17 @@ export default function RandomUserPage() {
       {isLoading && (
         <p className="display-6 text-center fst-italic my-4">Loading ...</p>
       )}
-      {users && !isLoading && users.map(/*code map rendering UserCard here */)}
+      {users &&
+        !isLoading &&
+        users.map((users) => (
+          <UserCard
+            key={users.email}
+            name={users.name}
+            email={users.email}
+            imgUrl={users.imgUrl}
+            address={users.address}
+          />
+        ))}
     </div>
   );
 }
